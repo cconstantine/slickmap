@@ -1,0 +1,10 @@
+local.properties
+bin
+gen
+.classpath
+.project
+.settings
+.DS_Store
+.metadata
+*.class
+/.externalToolBuilders/
