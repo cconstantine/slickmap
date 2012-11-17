@@ -2,85 +2,16 @@ package com.gamuphi.slickmap;
 
 import android.content.Context;
 import android.graphics.Point;
-import android.graphics.drawable.Drawable;
-import android.os.Bundle;
-import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.FloatMath;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.GestureDetector.SimpleOnGestureListener;
-import android.view.View.BaseSavedState;
 import android.widget.FrameLayout;
 import android.widget.GridView;
 
 import android.widget.Scroller;
-import android.widget.TextView;
-
-class SaveRatio extends BaseSavedState {
-  public float x_ratio;
-  public float y_ratio;
-
-  SaveRatio(Parcelable superState, float x_ratio, float y_ratio) {
-    super(superState);
-    Logger.debug(String.format("SaveRatio::SaveRatio(...) x_ratio: %f, y_ratio: %f", x_ratio, y_ratio));
-    this.x_ratio = x_ratio;
-    this.y_ratio = y_ratio;
-  }
-
-  private SaveRatio(Parcel in) {
-    super(in);
-    x_ratio = in.readFloat();
-    y_ratio = in.readFloat();
-    Logger.debug(String.format("SaveRatio::SaveRatio(Parcel in) x_ratio: %f, y_ratio: %f", x_ratio, y_ratio));
-  }
-
-  @Override
-  public void writeToParcel(Parcel out, int flags) {
-    super.writeToParcel(out, flags);
-    Logger.debug(String.format("SaveRatio::writeToParcel() x_ratio: %f, y_ratio: %f", x_ratio, y_ratio));
-    out.writeFloat(x_ratio);
-    out.writeFloat(y_ratio);
-  }
-
-  public static final Parcelable.Creator<SaveRatio> CREATOR = new Parcelable.Creator<SaveRatio>() {
-    public SaveRatio createFromParcel(Parcel in) {
-      return new SaveRatio(in);
-    }
-
-    public SaveRatio[] newArray(int size) {
-      return new SaveRatio[size];
-    }
-  };
-}
-
-class Tile extends TextView {
-
-  protected Point loc;
-
-  public Tile(Context context) {
-    super(context);
-    loc = new Point(0, 0);
-
-    Drawable d = getContext().getResources().getDrawable(R.drawable.kitty);
-    this.setBackgroundDrawable(d);
-  }
-
-  public Point offset;
-
-  public void setLoc(int x, int y) {
-    loc.x = x;
-    loc.y = y;
-    String t = String.format("(%d, %d)", x, y);
-    this.setText(t);
-  }
-
-  public Point getLoc() {
-    return loc;
-  }
-
-}
 
 public class MapFrameView extends FrameLayout {
 
@@ -115,24 +46,24 @@ public class MapFrameView extends FrameLayout {
   private float x_ratio;
   private float y_ratio;
 
+
   public MapFrameView(Context context) {
     super(context);
-    Logger.debug("MapFrameView::MapFrameView(Context context)");
-    init(3);
+//    Logger.debug("MapFrameView::MapFrameView(Context context)");
+    
+    init(8);
   }
 
   public MapFrameView(Context context, AttributeSet attrs) {
     super(context, attrs);
-    Logger
-        .debug("MapFrameView::MapFrameView(Context context, AttributeSet attrs)");
-    init(3);
+//    Logger.debug("MapFrameView::MapFrameView(Context context, AttributeSet attrs)");
+    init(8);
   }
 
   public MapFrameView(Context context, AttributeSet attrs, int defStyle) {
     super(context, attrs, defStyle);
-    Logger
-        .debug("MapFrameView::MapFrameView(Context context, AttributeSet attrs, int defStyle)");
-    init(3);
+//    Logger.debug("MapFrameView::MapFrameView(Context context, AttributeSet attrs, int defStyle)");
+    init(8);
   }
 
   private void init(int zoom_level) {
@@ -175,16 +106,15 @@ public class MapFrameView extends FrameLayout {
 
   @Override
   protected Parcelable onSaveInstanceState() {
-    Logger.debug("onSaveInstanceState");
-    Logger.debug(String.format("MapFrameView::onSaveInstanceState() x_ratio: %f, y_ratio: %f", x_ratio, y_ratio));
+//    Logger.debug("onSaveInstanceState");
+//    Logger.debug(String.format("MapFrameView::onSaveInstanceState() x_ratio: %f, y_ratio: %f", x_ratio, y_ratio));
     return new SaveRatio( super.onSaveInstanceState(), x_ratio, y_ratio);
   }
 
   @Override
   protected void onRestoreInstanceState(Parcelable state) {
-    Logger.debug("onRestoreInstanceState");
+//    Logger.debug("onRestoreInstanceState");
     if(!(state instanceof SaveRatio)) {
-      Logger.debug("BAILING!");
       super.onRestoreInstanceState(state);
       return;
     }
@@ -195,15 +125,11 @@ public class MapFrameView extends FrameLayout {
 
     this.x_ratio = ss.x_ratio;
     this.y_ratio = ss.y_ratio;
-    Logger.debug(String.format("MapFrameView::onRestoreInstanceState() x_ratio: %f, y_ratio: %f", x_ratio, y_ratio));
-
-
-//    this.slide(lower_right.x * ss.x_ratio, lower_right.x * ss.x_ratio);
+//    Logger.debug(String.format("MapFrameView::onRestoreInstanceState() x_ratio: %f, y_ratio: %f", x_ratio, y_ratio));
   }
 
   @Override
   public void computeScroll() {
-    Logger.debug("computeScroll()");
     if (scroller.computeScrollOffset()) {
       slide(view_offset.x - scroller.getCurrX(),
           view_offset.y - scroller.getCurrY());
@@ -250,14 +176,12 @@ public class MapFrameView extends FrameLayout {
           loc_x += rows;
         }
 
-        while (vh.offset.x + subview_dim > layout_width
-            + (subview_dim + (subview_dim >> 1))) {
+        while (vh.offset.x + subview_dim > layout_width + (subview_dim + (subview_dim >> 1))) {
           vh.offset.x -= rows * subview_dim;
           loc_x -= rows;
         }
 
-        while (loc_y + cols <= map_dim
-            && vh.offset.y < -(subview_dim + (subview_dim >> 1))) {
+        while (loc_y + cols < map_dim && vh.offset.y < -(subview_dim + (subview_dim >> 1))) {
           vh.offset.y += cols * subview_dim;
           loc_y += cols;
         } 
@@ -274,7 +198,7 @@ public class MapFrameView extends FrameLayout {
           } else {
             loc_x = loc_x % map_dim;
           }
-          vh.setLoc(loc_x, loc_y);
+          vh.setLoc(loc_x, loc_y, zoom);
         }
         vh.setTranslationX(vh.offset.x);
         vh.setTranslationY(vh.offset.y);
@@ -286,8 +210,7 @@ public class MapFrameView extends FrameLayout {
   @Override
   protected void onLayout(boolean changed, int l, int t, int r, int b) {
     super.onLayout(changed, l, t, r, b);
-    Logger.debug(String.format("changed: %b, l: %d, t: %d, r: %d, b: %d",
-        changed, l, t, r, b));
+//    Logger.debug(String.format("changed: %b, l: %d, t: %d, r: %d, b: %d", changed, l, t, r, b));
 
     if (changed) {
 
@@ -297,8 +220,8 @@ public class MapFrameView extends FrameLayout {
       rows = (int) (2 + FloatMath.ceil((float) layout_width / subview_dim));
       cols = (int) (2 + FloatMath.ceil((float) layout_height / subview_dim));
 
-      lower_right.x = (map_dim + 1) * subview_dim - layout_width;
-      lower_right.y = (map_dim + 1) * subview_dim - layout_height;
+      lower_right.x = map_dim * subview_dim - layout_width;
+      lower_right.y = map_dim * subview_dim - layout_height;
 
       view_offset.x = 0;
       view_offset.y = 0;
@@ -308,13 +231,12 @@ public class MapFrameView extends FrameLayout {
       if (cols > map_dim)
         cols = (int) map_dim;
 
-      Logger.debug(String.format("lower_right.x: %d, lower_right.y: %d",
-          lower_right.x, lower_right.y));
-      Logger.debug(String.format("view_offset.x: %d, view_offset.y: %d",
-          view_offset.x, view_offset.y));
+/*
+      Logger.debug(String.format("lower_right.x: %d, lower_right.y: %d", lower_right.x, lower_right.y));
+      Logger.debug(String.format("view_offset.x: %d, view_offset.y: %d", view_offset.x, view_offset.y));
       
       Logger.debug(String.format("rows: %d,  cols: %d", rows, cols));
-
+*/
       if (views == null) {
         views = new Tile[rows * cols];
       }
@@ -335,7 +257,7 @@ public class MapFrameView extends FrameLayout {
             vh.offset.x = x * subview_dim;
             vh.offset.y = y * subview_dim;
           }
-          vh.setLoc(x, y);
+          vh.setLoc(x, y, zoom);
 
           vh.setTranslationX(vh.offset.x);
           vh.setTranslationY(vh.offset.y);
