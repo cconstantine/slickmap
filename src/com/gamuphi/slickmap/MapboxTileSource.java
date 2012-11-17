@@ -12,6 +12,7 @@ import org.json.JSONObject;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.http.HttpResponseCache;
 
 public class MapboxTileSource implements TileSource {
 
@@ -69,8 +70,11 @@ public class MapboxTileSource implements TileSource {
       urlString = urlString.replaceFirst("\\{x\\}", Integer.toString(x));
       urlString = urlString.replaceFirst("\\{y\\}", Integer.toString(y));
       urlString = urlString.replaceFirst("\\{z\\}", Integer.toString(z));
-      
-      Logger.debug(String.format("GET: %s", urlString));
+       
+//      Logger.debug(String.format("GET: %s", urlString));
+//      HttpResponseCache c = HttpResponseCache.getInstalled();
+//      Logger.debug(String.format("getHitCount(): %d, getRequestCount(): %d, getNetworkCount(): %d",
+//          c.getHitCount(), c.getRequestCount(), c.getNetworkCount()));
       URL url = new URL(urlString);
       urlConnection = (HttpURLConnection) url.openConnection();
       InputStream in = new BufferedInputStream(urlConnection.getInputStream());

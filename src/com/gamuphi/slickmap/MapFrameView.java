@@ -106,7 +106,7 @@ public class MapFrameView extends FrameLayout {
   }
   
   public void setTileSource(TileSource ts) {
-    Tile.tile_source = ts;
+    Tile.setTileSource(ts);
   }
 
   @Override
@@ -122,7 +122,7 @@ public class MapFrameView extends FrameLayout {
     if(!(state instanceof SaveRatio)) {
       super.onRestoreInstanceState(state);
       return;
-    }
+    } 
 
     SaveRatio ss = (SaveRatio)state;
     super.onRestoreInstanceState(ss.getSuperState());
@@ -288,7 +288,7 @@ public class MapFrameView extends FrameLayout {
         }
         
       };
-      at.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
+      at.execute();
     }
   }
 

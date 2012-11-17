@@ -1,6 +1,7 @@
 package com.gamuphi.slickmap;
 
 import java.util.ArrayDeque;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 
@@ -42,7 +43,8 @@ public class Tile extends TextView {
 
   protected Point loc;
   
-  static public TileSource tile_source;
+  static private CountDownLatch readyLock = new CountDownLatch(1);
+  static private TileSource tile_source;
   private Executor executor = new SerialExecutor();
   
   public Tile(Context context) {
@@ -65,7 +67,7 @@ public class Tile extends TextView {
     int dim = (int) Math.pow(2, zoom);
     y = dim - y;
 
-    Drawable d = getContext().getResources().getDrawable(R.drawable.kitty);
+    Drawable d = getContext().getResources().getDrawable(R.drawable.test);
 
     this.setBackgroundDrawable(d);
     
@@ -75,7 +77,13 @@ public class Tile extends TextView {
     
     at = new AsyncTask<Point, Integer, Drawable>() {
       protected Drawable doInBackground(Point... points) {
-        return new BitmapDrawable(tile_source.getTile(points[0].x, points[0].y, zoom));
+        try {
+          readyLock.await();
+          return new BitmapDrawable(tile_source.getTile(points[0].x, points[0].y, zoom));
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+          return null;
+        }
       }
 
 
@@ -91,6 +99,11 @@ public class Tile extends TextView {
       } catch (RejectedExecutionException e) { 
       } catch (IllegalStateException e) { posted = true;}
     }
+  }
+  
+  static public void setTileSource(TileSource ts) {
+    readyLock.countDown();
+    tile_source = ts;
   }
   
   public Point getLoc() {
