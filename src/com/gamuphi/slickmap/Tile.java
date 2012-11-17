@@ -1,15 +1,15 @@
 package com.gamuphi.slickmap;
 
-import java.io.File;
 import java.util.ArrayDeque;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 
+
 import android.content.Context;
 import android.graphics.Point;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
-import android.os.Environment;
 import android.widget.TextView;
 
 class SerialExecutor implements Executor {
@@ -38,23 +38,16 @@ class SerialExecutor implements Executor {
   }
 }
 
-class Tile extends TextView {
+public class Tile extends TextView {
 
   protected Point loc;
   
-  private final File sdcard = Environment.getExternalStorageDirectory();
-  private final String db_name = "map.mbtiles"; 
-  private final File sqlitefile = new File(sdcard, db_name); // sqlite file to load 
-
-  static private MBTileSource tile_source;
+  static public TileSource tile_source;
   private Executor executor = new SerialExecutor();
   
   public Tile(Context context) {
     super(context);
     loc = new Point(0, 0);
-    if (tile_source == null) 
-      tile_source = new MBTileSource(context, sqlitefile);
-
 
     executor = new SerialExecutor();
     Drawable d = getContext().getResources().getDrawable(R.drawable.kitty);
@@ -82,7 +75,7 @@ class Tile extends TextView {
     
     at = new AsyncTask<Point, Integer, Drawable>() {
       protected Drawable doInBackground(Point... points) {
-        return tile_source.getTileAsDrawable(points[0].x, points[0].y, zoom);
+        return new BitmapDrawable(tile_source.getTile(points[0].x, points[0].y, zoom));
       }
 
 

@@ -7,10 +7,8 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 
-public class MBTileSource {
+public class MBTileSource implements TileSource {
   private SQLiteDatabase db;
 
   MBTileSource(Context ctx, File dbpath) {
@@ -22,10 +20,6 @@ public class MBTileSource {
       db.close();
   }
 
-  public Drawable getTileAsDrawable(int x, int y, int z){
-    return new BitmapDrawable(getTile(x, y, z));
-  }
-  
   public Bitmap getTile(int x, int y, int z) {
     Cursor c = db.rawQuery(
         "select tile_data from tiles where tile_column=? and tile_row=? and zoom_level=?",
@@ -40,5 +34,8 @@ public class MBTileSource {
     return BitmapFactory.decodeByteArray(bb, 0, bb.length);
     
   }
+
+  @Override
+  public void cancel() { }
 
 }

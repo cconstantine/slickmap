@@ -2,6 +2,7 @@ package com.gamuphi.slickmap;
 
 import android.content.Context;
 import android.graphics.Point;
+import android.os.AsyncTask;
 import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.FloatMath;
@@ -103,6 +104,10 @@ public class MapFrameView extends FrameLayout {
     });
 
   }
+  
+  public void setTileSource(TileSource ts) {
+    Tile.tile_source = ts;
+  }
 
   @Override
   protected Parcelable onSaveInstanceState() {
@@ -145,23 +150,24 @@ public class MapFrameView extends FrameLayout {
     MapFrameView.this.invalidate();
   }
 
-  public void slide(float distanceX, float distanceY) {
-    int delta_x = (int) distanceX;
-    int delta_y = (int) distanceY;
-
-    if (view_offset.y - delta_y > 0) {
-      delta_y = view_offset.y;
-    } else if (view_offset.y - delta_y < -lower_right.y) {
-      delta_y = view_offset.y + lower_right.y;
-    }
-
-    view_offset.x -= delta_x;
-    view_offset.y -= delta_y;
-
-    x_ratio = ((float) -view_offset.x) / lower_right.x;
-    y_ratio = ((float) -view_offset.y) / lower_right.y;
+  synchronized public void slide(float distanceX, float distanceY) {
 
     if (views != null) {
+      int delta_x = (int) distanceX;
+      int delta_y = (int) distanceY;
+  
+      if (view_offset.y - delta_y > 0) {
+        delta_y = view_offset.y;
+      } else if (view_offset.y - delta_y < -lower_right.y) {
+        delta_y = view_offset.y + lower_right.y;
+      }
+  
+      view_offset.x -= delta_x;
+      view_offset.y -= delta_y;
+  
+      x_ratio = ((float) -view_offset.x) / lower_right.x;
+      y_ratio = ((float) -view_offset.y) / lower_right.y;
+
       for (Tile vh : MapFrameView.this.views) {
         vh.offset.x -= delta_x;
         vh.offset.y -= delta_y;
@@ -206,64 +212,83 @@ public class MapFrameView extends FrameLayout {
     }
 
   }
+  
+  synchronized protected void changeLayout(int l, int t, int r, int b) {
+    layout_width = r - l;
+    layout_height = b - t;
 
-  @Override
-  protected void onLayout(boolean changed, int l, int t, int r, int b) {
-    super.onLayout(changed, l, t, r, b);
-//    Logger.debug(String.format("changed: %b, l: %d, t: %d, r: %d, b: %d", changed, l, t, r, b));
+    rows = (int) (2 + FloatMath.ceil((float) layout_width / subview_dim));
+    cols = (int) (2 + FloatMath.ceil((float) layout_height / subview_dim));
 
-    if (changed) {
+    lower_right.x = map_dim * subview_dim - layout_width;
+    lower_right.y = map_dim * subview_dim - layout_height;
 
-      layout_width = r - l;
-      layout_height = b - t;
+    view_offset.x = 0;
+    view_offset.y = 0;
 
-      rows = (int) (2 + FloatMath.ceil((float) layout_width / subview_dim));
-      cols = (int) (2 + FloatMath.ceil((float) layout_height / subview_dim));
-
-      lower_right.x = map_dim * subview_dim - layout_width;
-      lower_right.y = map_dim * subview_dim - layout_height;
-
-      view_offset.x = 0;
-      view_offset.y = 0;
-
-      if (rows > map_dim)
-        rows = (int) map_dim;
-      if (cols > map_dim)
-        cols = (int) map_dim;
+    if (rows > map_dim)
+      rows = (int) map_dim;
+    if (cols > map_dim)
+      cols = (int) map_dim;
 
 /*
-      Logger.debug(String.format("lower_right.x: %d, lower_right.y: %d", lower_right.x, lower_right.y));
-      Logger.debug(String.format("view_offset.x: %d, view_offset.y: %d", view_offset.x, view_offset.y));
-      
-      Logger.debug(String.format("rows: %d,  cols: %d", rows, cols));
+    Logger.debug(String.format("lower_right.x: %d, lower_right.y: %d", lower_right.x, lower_right.y));
+    Logger.debug(String.format("view_offset.x: %d, view_offset.y: %d", view_offset.x, view_offset.y));
+    
+    Logger.debug(String.format("rows: %d,  cols: %d", rows, cols));
 */
-      if (views == null) {
-        views = new Tile[rows * cols];
-      }
+    if (views == null) {
+      views = new Tile[rows * cols];
+    }
 
-      for (int y = 0; y < cols; y++) {
-        for (int x = 0; x < rows; x++) {
-          int i = x + y * rows;
-          Tile vh = views[i];
-          if (vh == null) {
-            vh = new Tile(getContext());
-            views[i] = vh;
-            vh.setLayoutParams(new GridView.LayoutParams(subview_dim,
-                subview_dim));
+    for (int y = 0; y < cols; y++) {
+      for (int x = 0; x < rows; x++) {
+        int i = x + y * rows;
+        Tile vh = views[i];
+        if (vh == null) {
+          vh = new Tile(getContext());
+          views[i] = vh;
+          vh.setLayoutParams(new GridView.LayoutParams(subview_dim,
+              subview_dim));
 
-            vh.offset = new Point(x * subview_dim, y * subview_dim);
-            addView(vh);
-          } else {
-            vh.offset.x = x * subview_dim;
-            vh.offset.y = y * subview_dim;
-          }
-          vh.setLoc(x, y, zoom);
-
-          vh.setTranslationX(vh.offset.x);
-          vh.setTranslationY(vh.offset.y);
+          vh.offset = new Point(x * subview_dim, y * subview_dim);
+        } else {
+          vh.offset.x = x * subview_dim;
+          vh.offset.y = y * subview_dim;
         }
+        vh.setLoc(x, y, zoom);
+
+        vh.setTranslationX(vh.offset.x);
+        vh.setTranslationY(vh.offset.y);
       }
-      this.slide(lower_right.x * x_ratio, lower_right.y * y_ratio);
+    }
+    this.slide(lower_right.x * x_ratio, lower_right.y * y_ratio);
+  }
+
+  @Override
+  protected void onLayout(boolean changed, final int l, final int t, final int r, final int b) {
+    super.onLayout(changed, l, t, r, b);
+
+    
+    if (changed) {
+      AsyncTask<Void, Void, Void> at = new AsyncTask<Void, Void, Void>() {
+
+        @Override
+        protected Void doInBackground(Void... params) {
+
+          MapFrameView.this.changeLayout(l,  t,  r,  b);
+          return null;
+        }
+        
+        @Override
+        protected void onPostExecute(Void voider) {
+          for(Tile v : views) {
+            MapFrameView.this.addView(v);
+          }
+        }
+        
+      };
+      at.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
     }
   }
 
