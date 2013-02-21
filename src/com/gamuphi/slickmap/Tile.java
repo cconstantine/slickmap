@@ -1,6 +1,8 @@
 package com.gamuphi.slickmap;
 
 import java.util.ArrayDeque;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
@@ -39,12 +41,39 @@ class SerialExecutor implements Executor {
   }
 }
 
+class TileCache {
+  final int MAX_ENTRIES = 100;
+  LinkedHashMap<Integer, Drawable> cache = new LinkedHashMap<Integer, Drawable>(MAX_ENTRIES+1, .75F, true) {
+      /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+
+      // This method is called just after a new entry has been added
+      public boolean removeEldestEntry(Map.Entry eldest) {
+          return size() > MAX_ENTRIES;
+      }
+  };
+
+  public Drawable get(int x, int y, int z) {
+    int map_dim = (int) Math.pow(2, z);
+
+    return cache.get(x + y*map_dim + z*map_dim*map_dim);
+  }
+  
+  public void put(int x, int y, int z, Drawable d) {
+    int map_dim = (int) Math.pow(2, z);
+    cache.put(x + y*map_dim + z*map_dim*map_dim, d);
+  }
+}
+
 public class Tile extends TextView {
 
   protected Point loc;
   
   static private CountDownLatch readyLock = new CountDownLatch(1);
   static private TileSource tile_source;
+  static private TileCache tc = new TileCache();
   private Executor executor = new SerialExecutor();
   
   public Tile(Context context) {
@@ -67,8 +96,11 @@ public class Tile extends TextView {
     int dim = (int) Math.pow(2, zoom);
     y = dim - y;
 
-    Drawable d = getContext().getResources().getDrawable(R.drawable.test);
-
+    Drawable d = tc.get(x,  y,  zoom);
+    if (d == null) {
+      d = getContext().getResources().getDrawable(R.drawable.test);
+    }
+    
     this.setBackgroundDrawable(d);
     
     if(at != null) {
@@ -79,7 +111,9 @@ public class Tile extends TextView {
       protected Drawable doInBackground(Point... points) {
         try {
           readyLock.await();
-          return new BitmapDrawable(tile_source.getTile(points[0].x, points[0].y, zoom));
+          Drawable d = new BitmapDrawable(tile_source.getTile(points[0].x, points[0].y, zoom));
+          tc.put(points[0].x, points[0].y, zoom, d);
+          return d;
         } catch (InterruptedException e) {
           e.printStackTrace();
           return null;

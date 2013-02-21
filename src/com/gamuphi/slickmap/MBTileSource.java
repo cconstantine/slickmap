@@ -11,7 +11,7 @@ import android.graphics.BitmapFactory;
 public class MBTileSource implements TileSource {
   private SQLiteDatabase db;
 
-  MBTileSource(Context ctx, File dbpath) {
+  public MBTileSource(Context ctx, File dbpath) {
     db = SQLiteDatabase.openDatabase(dbpath.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
   }
   

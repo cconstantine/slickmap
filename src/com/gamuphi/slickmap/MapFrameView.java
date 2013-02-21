@@ -6,17 +6,12 @@ import android.os.AsyncTask;
 import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.FloatMath;
-import android.view.GestureDetector;
-import android.view.MotionEvent;
-import android.view.GestureDetector.SimpleOnGestureListener;
 import android.widget.FrameLayout;
 import android.widget.GridView;
 
 import android.widget.Scroller;
 
 public class MapFrameView extends FrameLayout {
-
-  protected GestureDetector mGD;
 
   Tile[] views = null;
   static int subview_dim = 256;
@@ -55,6 +50,11 @@ public class MapFrameView extends FrameLayout {
     init(8);
   }
 
+  public MapFrameView(Context context, int zoom_level) {
+    super(context);
+    init(zoom_level);
+  }
+  
   public MapFrameView(Context context, AttributeSet attrs) {
     super(context, attrs);
 //    Logger.debug("MapFrameView::MapFrameView(Context context, AttributeSet attrs)");
@@ -80,28 +80,6 @@ public class MapFrameView extends FrameLayout {
     scroller = new Scroller(getContext());
     mIsBeingDragged = false;
 
-    mGD = new GestureDetector(getContext(), new SimpleOnGestureListener() {
-
-      @Override
-      public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX,
-          float distanceY) {
-        MapFrameView.this.slide(distanceX, distanceY);
-        return true;
-      }
-
-      @Override
-      public boolean onFling(MotionEvent e1, MotionEvent e2, float vX, float vY) {
-        MapFrameView.this.fling(vX, vY);
-        return true;
-      }
-
-      @Override
-      public boolean onDown(MotionEvent e) {
-        scroller.abortAnimation();
-        mIsBeingDragged = !scroller.isFinished();
-        return true;
-      }
-    });
 
   }
   
@@ -111,14 +89,14 @@ public class MapFrameView extends FrameLayout {
 
   @Override
   protected Parcelable onSaveInstanceState() {
-//    Logger.debug("onSaveInstanceState");
-//    Logger.debug(String.format("MapFrameView::onSaveInstanceState() x_ratio: %f, y_ratio: %f", x_ratio, y_ratio));
+    Logger.debug("MapFrameView::onSaveInstanceState");
+    Logger.debug(String.format("MapFrameView::onSaveInstanceState() x_ratio: %f, y_ratio: %f", x_ratio, y_ratio));
     return new SaveRatio( super.onSaveInstanceState(), x_ratio, y_ratio);
   }
 
   @Override
   protected void onRestoreInstanceState(Parcelable state) {
-//    Logger.debug("onRestoreInstanceState");
+    Logger.debug("MapFrameView::onRestoreInstanceState");
     if(!(state instanceof SaveRatio)) {
       super.onRestoreInstanceState(state);
       return;
@@ -149,8 +127,12 @@ public class MapFrameView extends FrameLayout {
 
     MapFrameView.this.invalidate();
   }
+  
+  public void slide(float distanceX, float distanceY) {
+    slide(distanceX, distanceY, false);
+  }
 
-  synchronized public void slide(float distanceX, float distanceY) {
+  synchronized public void slide(float distanceX, float distanceY, boolean redraw) {
 
     if (views != null) {
       int delta_x = (int) distanceX;
@@ -198,7 +180,7 @@ public class MapFrameView extends FrameLayout {
           loc_y -= cols;
         }
 
-        if (loc_x != loc.x || loc_y != loc.y) {
+        if (redraw || loc_x != loc.x || loc_y != loc.y) {
           if (loc_x < 0) {
             loc_x += map_dim;
           } else {
@@ -292,8 +274,27 @@ public class MapFrameView extends FrameLayout {
     }
   }
 
-  @Override
-  public boolean onTouchEvent(MotionEvent me) {
-    return mGD.onTouchEvent(me);
+  public void stopFling() {
+    scroller.abortAnimation();
+    mIsBeingDragged = !scroller.isFinished();
+  }
+
+  public int getZoom() {
+    return zoom;
+  }
+
+  public void setZoom(int i) {
+    Logger.debug(String.format("Going to zoom %d", i));
+    if (i < 8)
+      return;
+    else if (i > 9)
+      return;
+    Logger.debug("DO IT");
+    this.zoom = i;
+    map_dim = (int) Math.pow(2, zoom);
+    
+
+    changeLayout(0, layout_width, 0, layout_height);
+//    this.slide(0, 0, true);
   }
 }
